@@ -197,7 +197,7 @@ export class Anybody extends EventEmitter {
     } else {
       body.removeEventListener('click', this.missileClick)
       body.removeEventListener('click', this.setPause)
-      // body.addEventListener('click', this.setPause.bind(this))
+      body.addEventListener('click', this.setPause.bind(this))
     }
   }
 
