@@ -84,6 +84,20 @@ const orbit_10_DT6 = new URL(
   import.meta.url
 ).href
 
+// const coinBox = new URL('../public/sound/fx/coin-box.mp3', import.meta.url).href
+const bongoHard = new URL(
+  '../public/sound/fx/SC_CP_perc_bongo_loud_tap.mp3',
+  import.meta.url
+).href
+const bubble = new URL(
+  '../public/sound/fx/DSC_GST_one_shot_perc_water.mp3',
+  import.meta.url
+).href
+const coin = new URL(
+  '../public/sound/fx/ESM_Game_Notification_83_Coin_Blip_Select_Tap_Button.mp3',
+  import.meta.url
+).href
+
 const SONGS = {
   whistle: {
     bpm: 70,
@@ -144,6 +158,7 @@ const SONGS = {
   orbit: {
     bpm: 96,
     interval: '4m',
+    volume: -6,
     parts: [
       [
         [orbit_3_Audio, 1, 1],
@@ -162,12 +177,15 @@ const INTRO_LENGTH = 1 // measures
 export default class Sound {
   currentMeasure = 0
 
-  constructor() {
+  constructor(anybody) {
     if (typeof window === 'undefined') return
+    this.anybody = anybody
     window.addEventListener('keydown', this.handleKeyDown)
   }
 
   handleKeyDown = (e) => {
+    if (this.anybody.paused) return
+
     if (e.key === '1') {
       this.stop()
       this.play(SONGS.whistle)
@@ -186,12 +204,43 @@ export default class Sound {
   // this function must be called in response to a user action
   // otherwise safari and chrome will block the audio
   resume() {
-    this.play(SONGS.ipod)
+    const randomSong =
+      Object.values(SONGS)[
+        Math.floor(Math.random() * Object.values(SONGS).length)
+      ]
+    this.play(randomSong)
+    this.playOneShot(bongoHard, -20)
   }
 
   pause() {
     Transport?.stop()
     this.voices?.forEach((voice) => voice.player.stop())
+    this.playOneShot(bongoHard, -22)
+  }
+
+  playMissile() {
+    this.playOneShot(bubble, -26)
+  }
+
+  playExplosion() {
+    this.playOneShot(coin, -16)
+  }
+
+  async playOneShot(url, volume) {
+    this.oneShots = this.oneShots || {}
+    if (!this.oneShots[url]) {
+      this.oneShots[url] = new Player({
+        url,
+        volume
+      }).toDestination()
+    }
+
+    // play if it's been loaded or loads quickly, otherwise load and skip
+    const now = Date.now()
+    await loaded()
+    if (Date.now() - now < 20) {
+      this.oneShots[url].start()
+    }
   }
 
   voiceFromFile(file) {
@@ -208,9 +257,10 @@ export default class Sound {
   }
 
   stop() {
-    this.pause()
+    Transport?.stop()
     this.loop?.dispose()
     this.voices?.forEach((voice) => {
+      voice.player.stop()
       voice.player.dispose()
       voice.panVol.dispose()
     })
@@ -243,8 +293,9 @@ export default class Sound {
       this.compressor.ratio.value = 2
       this.compressor.attack.value = 1
       this.compressor.release.value = 0.1
-      this.masterVolume = new Volume(0).toDestination()
-      this.masterVolume.volume.rampTo(MAX_VOLUME, 3)
+      this.masterVolume?.dispose()
+      this.masterVolume = new Volume(song.volume || 0).toDestination()
+      this.masterVolume.volume.rampTo(song.volume || MAX_VOLUME, 3)
       this.master = this.reverb
         .connect(this.compressor)
         .connect(this.masterVolume)
@@ -303,13 +354,5 @@ export default class Sound {
       const panRange = 1.4 // 2 is max, hard L/R panning
       voice.panVol.pan.linearRampTo(xFactor * panRange - panRange / 2, 0.1)
     })
-  }
-
-  activeVoices() {
-    return (
-      this.voices
-        ?.map((voice, i) => (voice.panVol.volume.value > -Infinity ? i : null))
-        .filter((i) => i !== null) || []
-    )
   }
 }

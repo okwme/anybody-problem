@@ -76,7 +76,7 @@ export class Anybody extends EventEmitter {
 
     !this.util && this.prepareP5()
     this.clearValues()
-    this.sound = new Sound()
+    this.sound = new Sound(this)
     this.init()
     !this.util && this.start()
   }
@@ -504,6 +504,7 @@ export class Anybody extends EventEmitter {
     }
     b.velocity.limit(10)
     this.missiles.push(b)
+    this.sound?.playMissile()
     this.missileInits.push(...this.processMissileInits([b]))
   }
 }
