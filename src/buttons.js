@@ -24,6 +24,22 @@ export const Buttons = {
       button = this.buttons[key]
     }
     button.visible = true
+    const justEntered = button.lastVisibleFrame !== this.p5Frames - 1
+    if (justEntered) {
+      button.visibleForFrames = 0
+    }
+    button.visibleForFrames++
+    button.lastVisibleFrame = this.p5Frames
+
+    const entranceTime = 0.4 // seconds
+
+    // animate in button when it is visible
+    const scale = Math.min(
+      1,
+      button.visibleForFrames / (entranceTime * this.P5_FPS)
+    )
+    const scaledWidth = width * scale
+    const scaledHeight = height * scale
 
     p.push()
     p.noStroke()
@@ -31,15 +47,23 @@ export const Buttons = {
     p.strokeWeight(button.active ? 1 : 4)
     p.fill(bg)
 
-    p.rect(x, y, width, height, height / 2)
+    p.rect(
+      x + width / 2 - scaledWidth / 2,
+      y + height / 2 - scaledHeight / 2,
+      scaledWidth,
+      scaledHeight,
+      height / 2
+    )
     if (button.hover) {
       p.fill(fgHover)
       p.rect(x, y, width, height, height / 2)
     }
 
-    p.fill(fg)
-    p.textAlign(p.CENTER, p.CENTER)
-    p.text(text, x + width / 2, y + height / 2 + textSize * 0.05)
+    if (scale === 1) {
+      p.fill(fg)
+      p.textAlign(p.CENTER, p.CENTER)
+      p.text(text, x + width / 2, y + height / 2 + textSize * 0.05)
+    }
     p.pop()
   },
 
